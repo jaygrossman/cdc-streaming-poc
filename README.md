@@ -6,10 +6,19 @@ Everything runs in Docker with a single `docker compose up --build`.
 
 ## Architecture
 
+Flink variant:
 ```
 ┌──────────────┐       ┌──────────┐       ┌───────┐       ┌───────────┐       ┌──────────────┐
 │  PostgreSQL  │──CDC─>│ Debezium │──────>│ Kafka │──────>│ Flink SQL │──────>│  PostgreSQL  │
 │  (JSONB)     │       │          │       │       │       │ (flatten) │       │ (normalized) │
+└──────────────┘       └──────────┘       └───────┘       └───────────┘       └──────────────┘
+```
+
+Spark variant:
+```
+┌──────────────┐       ┌──────────┐       ┌───────┐       ┌───────────┐       ┌──────────────┐
+│  PostgreSQL  │──CDC─>│ Debezium │──────>│ Kafka │──────>│   Spark   │──────>│  PostgreSQL  │
+│  (JSONB)     │       │          │       │       │       │ Streaming │       │ (normalized) │
 └──────────────┘       └──────────┘       └───────┘       └───────────┘       └──────────────┘
 ```
 
