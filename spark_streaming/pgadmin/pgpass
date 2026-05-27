@@ -1,0 +1,2 @@
+postgres-source:5432:source_db:cdc_user:cdc_pass
+postgres-cdc:5432:cdc_db:cdc_user:cdc_pass

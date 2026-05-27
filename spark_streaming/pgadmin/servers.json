@@ -1,0 +1,26 @@
+{
+  "Servers": {
+    "1": {
+      "Name": "Source DB (postgres-source)",
+      "Group": "Servers",
+      "Host": "postgres-source",
+      "Port": 5432,
+      "MaintenanceDB": "source_db",
+      "Username": "cdc_user",
+      "SSLMode": "prefer",
+      "PassFile": "/tmp/pgpass",
+      "Password": "cdc_pass"
+    },
+    "2": {
+      "Name": "CDC DB (postgres-cdc)",
+      "Group": "Servers",
+      "Host": "postgres-cdc",
+      "Port": 5432,
+      "MaintenanceDB": "cdc_db",
+      "Username": "cdc_user",
+      "SSLMode": "prefer",
+      "PassFile": "/tmp/pgpass",
+      "Password": "cdc_pass"
+    }
+  }
+}

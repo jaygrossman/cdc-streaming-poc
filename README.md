@@ -17,7 +17,7 @@ A single `policy` table with nested JSONB (policyholder, coverages, vehicles, dr
 
 ## Variants
 
-This repo contains four implementations of the pipeline, each in its own directory:
+This repo contains five implementations of the pipeline, each in its own directory:
 
 ### [`append_new_records/`](append_new_records/)
 
@@ -69,19 +69,34 @@ Same staging architecture as the dbt variants, but replaces dbt entirely with a 
 - Watermark-based staging tracking (no re-scanning)
 - Best for: when you want atomic cross-table consistency, don't need dbt, and prefer a simpler operational footprint
 
+### [`spark_streaming/`](spark_streaming/)
+
+**Spark Structured Streaming + PG transaction merge** -- the Spark alternative.
+
+Same staging + PL/pgSQL merge architecture as `pg_transaction`, but replaces Flink SQL with PySpark Structured Streaming. Uses `explode()` + `from_json()` for JSON array flattening instead of Flink's UNION ALL with hardcoded indices. Runs as a single `spark-submit` container with micro-batch processing (every 5s).
+
+- Handles inserts, updates, and deletes
+- All 5 output tables update atomically (single transaction)
+- No dbt dependency -- pure SQL merge logic
+- Separate source and CDC databases (production-like topology)
+- `explode()` handles JSON arrays of any length (no hardcoded index limits)
+- Tested: 50 policies (416 output rows) propagated end-to-end in ~9.5s
+- Best for: when you prefer PySpark over Flink SQL, want cleaner array handling, or your team already uses Spark
+
 ## Comparison
 
-| | append_new_records | dbt_upsert | dbt_event_trigger | pg_transaction |
-|---|---|---|---|---|
-| Flink writes to | `output_*` (upsert) | `stg_*` (append-only) | `stg_*` (append-only) | `stg_*` (append-only) |
-| Merge strategy | Flink JDBC upsert | dbt incremental | dbt incremental | PL/pgSQL DELETE+INSERT |
-| Delete handling | Ignored | Captured and applied | Captured and applied | In-transaction DELETE |
-| Atomicity | Per-table | Per-table | Per-table | All 5 tables in 1 txn |
-| Databases | 1 (shared) | 1 (shared) | 1 (shared) | 2 (source + cdc) |
-| dbt required | No | Yes | Yes | No |
-| Trigger | N/A | 30s polling loop | PG NOTIFY | PG NOTIFY |
-| End-to-end latency | ~5-15s | ~30-60s (loop) | ~6-10s (event-driven) | ~5-10s (event-driven) |
-| Idle overhead | None | dbt runs even with no data | Zero when idle | Zero when idle |
+| | append_new_records | dbt_upsert | dbt_event_trigger | pg_transaction | spark_streaming |
+|---|---|---|---|---|---|
+| Stream processor | Flink SQL | Flink SQL | Flink SQL | Flink SQL | Spark Structured Streaming |
+| Writes to | `output_*` (upsert) | `stg_*` (append-only) | `stg_*` (append-only) | `stg_*` (append-only) | `stg_*` (append-only) |
+| Merge strategy | Flink JDBC upsert | dbt incremental | dbt incremental | PL/pgSQL DELETE+INSERT | PL/pgSQL DELETE+INSERT |
+| Delete handling | Ignored | Captured and applied | Captured and applied | In-transaction DELETE | In-transaction DELETE |
+| Atomicity | Per-table | Per-table | Per-table | All 5 tables in 1 txn | All 5 tables in 1 txn |
+| Databases | 1 (shared) | 1 (shared) | 1 (shared) | 2 (source + cdc) | 2 (source + cdc) |
+| dbt required | No | Yes | Yes | No | No |
+| Trigger | N/A | 30s polling loop | PG NOTIFY | PG NOTIFY | PG NOTIFY |
+| End-to-end latency | ~5-15s | ~30-60s (loop) | ~6-10s (event-driven) | ~5-10s (event-driven) | ~10-18s (micro-batch) |
+| Idle overhead | None | dbt runs even with no data | Zero when idle | Zero when idle | Zero when idle |
 
 ## Prerequisites
 
@@ -118,6 +133,13 @@ cd pg_transaction
 docker compose up --build
 ```
 
+or
+
+```bash
+cd spark_streaming
+docker compose up --build
+```
+
 Each variant includes a verification script that checks every component and runs a live end-to-end test with timing:
 
 ```bash
@@ -134,7 +156,7 @@ docker compose down -v
 
 ## Services
 
-All four variants share the same core infrastructure:
+All five variants share the same core infrastructure:
 
 | Service | Port | Description |
 |---------|------|-------------|
@@ -146,4 +168,4 @@ All four variants share the same core infrastructure:
 | Flink TaskManager | -- | Stream processing (worker) |
 | PGAdmin | 5050 | Database UI (admin@admin.com / admin) |
 
-The `dbt_upsert` and `dbt_event_trigger` variants add a **dbt** container. The `pg_transaction` variant adds a **merge-listener** container and uses two separate PostgreSQL instances (source on port 5433, CDC on port 5432).
+The `dbt_upsert` and `dbt_event_trigger` variants add a **dbt** container. The `pg_transaction` variant adds a **merge-listener** container and uses two separate PostgreSQL instances (source on port 5433, CDC on port 5432). The `spark_streaming` variant replaces Flink with a **Spark Structured Streaming** container and uses the same merge-listener + dual-database topology as `pg_transaction`.
