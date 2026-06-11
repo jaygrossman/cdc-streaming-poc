@@ -144,7 +144,7 @@ Same staging + PL/pgSQL merge architecture as `pg_transaction`, but replaces Fli
 
 ## Quick Start
 
-Pick a variant and run:
+Pick a solution candidate and run:
 
 ```bash
 cd append_new_records
@@ -181,7 +181,7 @@ docker compose up --build
 
 ## Verification
 
-Each variant includes a comprehensive end-to-end verification script is included. It checks every component of the pipeline (services, Debezium, Kafka, Flink/Spark Streaming, output tables) and performs a live CDC insert test.
+Each solution candidate includes a comprehensive end-to-end verification script is included. It checks every component of the pipeline (services, Debezium, Kafka, Flink/Spark Streaming, output tables) and performs a live CDC insert test.
 
 ```bash
 ./verify-pipeline.sh
@@ -191,7 +191,7 @@ The script validates all 7 steps: Docker services, seed data, Debezium connector
 
 ## Tear Down
 
-From the variant directory:
+From the solution candidate directory:
 
 ```bash
 docker compose down -v
@@ -199,7 +199,7 @@ docker compose down -v
 
 ## Services
 
-All five variants share the same core infrastructure:
+All five solution candidates share the same core infrastructure:
 
 | Service | Port | Description |
 |---------|------|-------------|
@@ -211,4 +211,4 @@ All five variants share the same core infrastructure:
 | Flink TaskManager | -- | Stream processing (worker) |
 | PGAdmin | 5050 | Database UI (admin@admin.com / admin) |
 
-The `dbt_upsert` and `dbt_event_trigger` variants add a **dbt** container. The `pg_transaction` variant adds a **merge-listener** container and uses two separate PostgreSQL instances (source on port 5433, CDC on port 5432). The `spark_streaming` variant replaces Flink with a **Spark Structured Streaming** container and uses the same merge-listener + dual-database topology as `pg_transaction`.
+The `dbt_upsert` and `dbt_event_trigger` solution candidate add a **dbt** container. The `pg_transaction` solution candidate adds a **merge-listener** container and uses two separate PostgreSQL instances (source on port 5433, CDC on port 5432). The `spark_streaming` solution candidate replaces Flink with a **Spark Structured Streaming** container and uses the same merge-listener + dual-database topology as `pg_transaction`.
