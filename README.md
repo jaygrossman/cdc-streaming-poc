@@ -179,11 +179,16 @@ cd spark_streaming
 docker compose up --build
 ```
 
-Each variant includes a verification script that checks every component and runs a live end-to-end test with timing:
+## Verification
+
+Each variant includes a comprehensive end-to-end verification script is included. It checks every component of the pipeline (services, Debezium, Kafka, Flink/Spark Streaming, output tables) and performs a live CDC insert test.
 
 ```bash
 ./verify-pipeline.sh
 ```
+The script validates all 7 steps: Docker services, seed data, Debezium connector, Kafka topic, Flink job, output table contents, and a live insert round-trip. All 26 checks should pass with a "Pipeline is fully operational" message.
+
+
 
 ## Tear Down
 
