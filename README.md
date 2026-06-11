@@ -26,7 +26,7 @@ The source is a single `policy` table with a JSONB `data` column representing an
 }
 ```
 
-On startup, PostgreSQL seeds 4 sample policies. The pipeline flattens each JSONB record into 5 normalized output tables:
+One PostgreSQL database will have a table with 4 sample policies. The pipeline will need to flatten each JSONB record into 5 normalized output tables:
 
 | Output Table | Primary Key | Description |
 |---|---|---|
@@ -56,7 +56,7 @@ Spark Streaming option:
 
 ## Solution Candidates
 
-This repo contains five implementations of the pipeline, each in its own directory:
+This repo contains five implementations of the pipeline, each in its own directory (with their own Docker Compose files):
 
 ### [`append_new_records/`](append_new_records/)
 
