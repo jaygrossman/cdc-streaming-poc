@@ -4,9 +4,41 @@ Proof-of-concept demonstrating Change Data Capture from a PostgreSQL JSONB colum
 
 Everything runs in Docker with a single `docker compose up --build`.
 
+## Data Model
+
+The source is a single `policy` table with a JSONB `data` column representing an auto insurance policy. Each record contains nested objects and arrays:
+
+```json
+{
+  "policy_number": "POL-2024-00001",
+  "status": "active",
+  "effective_date": "2024-01-15",
+  "expiration_date": "2025-01-15",
+  "policyholder": {
+    "first_name": "...", "last_name": "...", "date_of_birth": "...",
+    "contact": { "email": "...", "phone": "...", "address": { "street": "...", "city": "...", "state": "...", "zip": "..." } }
+  },
+  "coverages": [ { "type": "liability", "limit": 300000, "deductible": 500, "premium": 800.00 }, ... ],
+  "vehicles": [ { "vin": "...", "year": 2022, "make": "...", "model": "...",
+    "drivers": [ { "name": "...", "license_number": "...", "is_primary": true }, ... ]
+  }, ... ],
+  "claims_history": [ { "claim_number": "...", "date_filed": "...", "type": "...", "amount": 5000, "status": "closed" }, ... ]
+}
+```
+
+On startup, PostgreSQL seeds 4 sample policies. The pipeline flattens each JSONB record into 5 normalized output tables:
+
+| Output Table | Primary Key | Description |
+|---|---|---|
+| `output_policy` | `policy_number` | Policy-level fields + flattened policyholder/contact/address |
+| `output_coverage` | `policy_number, coverage_type` | One row per coverage |
+| `output_vehicle` | `policy_number, vin` | One row per vehicle |
+| `output_driver` | `policy_number, vin, license_number` | One row per driver per vehicle |
+| `output_claim` | `policy_number, claim_number` | One row per claim |
+
 ## Architecture
 
-Flink variant:
+Flink options:
 ```
 ┌──────────────┐       ┌──────────┐       ┌───────┐       ┌───────────┐       ┌──────────────┐
 │  PostgreSQL  │──CDC─>│ Debezium │──────>│ Kafka │──────>│ Flink SQL │──────>│  PostgreSQL  │
@@ -14,7 +46,7 @@ Flink variant:
 └──────────────┘       └──────────┘       └───────┘       └───────────┘       └──────────────┘
 ```
 
-Spark variant:
+Spark Streaming option:
 ```
 ┌──────────────┐       ┌──────────┐       ┌───────┐       ┌───────────┐       ┌──────────────┐
 │  PostgreSQL  │──CDC─>│ Debezium │──────>│ Kafka │──────>│   Spark   │──────>│  PostgreSQL  │
@@ -22,9 +54,7 @@ Spark variant:
 └──────────────┘       └──────────┘       └───────┘       └───────────┘       └──────────────┘
 ```
 
-A single `policy` table with nested JSONB (policyholder, coverages, vehicles, drivers, claims) is flattened into 5 normalized output tables: `output_policy`, `output_coverage`, `output_vehicle`, `output_driver`, `output_claim`.
-
-## Variants
+## Solution Candidates
 
 This repo contains five implementations of the pipeline, each in its own directory:
 
