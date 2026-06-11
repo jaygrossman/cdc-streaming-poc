@@ -186,9 +186,8 @@ Each variant includes a comprehensive end-to-end verification script is included
 ```bash
 ./verify-pipeline.sh
 ```
-The script validates all 7 steps: Docker services, seed data, Debezium connector, Kafka topic, Flink job, output table contents, and a live insert round-trip. All 26 checks should pass with a "Pipeline is fully operational" message.
 
-
+The script validates all 7 steps: Docker services, seed data, Debezium connector, Kafka topic, Flink/Spark Streaming job, output table contents, and a live insert round-trip. All checks should pass with a "Pipeline is fully operational" message.
 
 ## Tear Down
 
