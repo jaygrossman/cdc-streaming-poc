@@ -1,4 +1,4 @@
-# CDC Flink PoC
+# CDC Streaming PoC
 
 Proof-of-concept demonstrating Change Data Capture from a PostgreSQL JSONB column, streamed through Kafka via Debezium, flattened into normalized relational tables by Flink SQL, and written back to PostgreSQL.
 
